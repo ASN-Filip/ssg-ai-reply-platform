@@ -102,7 +102,7 @@ export default function HeaderClient() {
     const { data: session } = useSession()
     if (!session) return <></>
     const name = session.user?.name || session.user?.email || 'User'
-    const role = (session.user && 'role' in session.user) ? (session.user as unknown as { role?: string }).role : ''
+    const role = session.user?.role ?? ''
     return (
       <div className="flex items-center space-x-3">
         <div className="text-sm text-gray-700">{name}</div>
