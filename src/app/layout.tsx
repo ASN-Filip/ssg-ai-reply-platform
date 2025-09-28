@@ -46,15 +46,15 @@ export default async function RootLayout({
         >
           {/* Client-side gate: renders children for allowed public routes (e.g. /signin),
              otherwise shows a loading skeleton while checking session and redirects */}
-          <Header />
           <ClientProviders>
+            <Header />
             <ClientAuthGate>
               {/* Place a no-op script to stabilize hydration */}
               <script dangerouslySetInnerHTML={{ __html: "// noop" }} />
               <main className="min-h-[60vh]">{children}</main>
             </ClientAuthGate>
+            <Footer />
           </ClientProviders>
-          <Footer />
         </body>
       </html>
     )
@@ -78,9 +78,11 @@ export default async function RootLayout({
         suppressHydrationWarning
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
-        <Header />
-        <main className="min-h-[60vh]">{children}</main>
-        <Footer />
+        <ClientProviders>
+          <Header />
+          <main className="min-h-[60vh]">{children}</main>
+          <Footer />
+        </ClientProviders>
       </body>
     </html>
   )
