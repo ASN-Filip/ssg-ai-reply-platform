@@ -1,7 +1,7 @@
 import { getServerSession } from 'next-auth/next'
 import { authOptions } from '@/lib/auth'
 import { redirect } from 'next/navigation'
-import UsersAdminClient from '@/components/admin/UsersAdminClient'
+import LocalesAdminClient from '@/components/admin/LocalesAdminClient'
 
 export default async function Page() {
   const session = await getServerSession(authOptions as unknown as Record<string, unknown>)
@@ -11,9 +11,8 @@ export default async function Page() {
 
   return (
     <main className="container mx-auto p-6">
-      <h1 className="text-2xl font-semibold mb-4">Admin — Users</h1>
-  {/* client component handles fetching and UI */}
-  <UsersAdminClient />
+      <h1 className="text-2xl font-semibold mb-4">Admin — Locales</h1>
+      <LocalesAdminClient />
     </main>
   )
 }

@@ -34,3 +34,17 @@ You can check out [the Next.js GitHub repository](https://github.com/vercel/next
 The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
 
 Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+
+## Migration: Toasts
+
+This project migrated from a store-based toast queue to a provider + hook.
+
+- Old system removed:
+	- `toastQueue` / `showToast` helpers in `src/stores/useUsersStore.ts`
+	- legacy renderer `src/components/ui/ToastLegacy.tsx`
+
+- New system:
+	- `ToastProvider` renders toasts globally: `src/components/ui/Toast.tsx`
+	- Use `useToast()` to show toasts from components: `import { useToast } from '@/hooks/useToast'`
+
+Tests and components were updated to call the provider hook directly. See `src/components/ui/Toast.tsx` for the TTL and queue constants if you depend on them in tests.

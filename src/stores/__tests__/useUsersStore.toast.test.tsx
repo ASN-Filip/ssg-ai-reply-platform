@@ -1,11 +1,10 @@
 import React from 'react'
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
-import { act } from 'react'
 import { render, screen, fireEvent } from '@testing-library/react'
-import { ToastProvider, TOAST_TTL_MS, TOAST_MAX } from '@/components/ui/Toast'
-import { useToast } from '@/hooks/useToast'
-// keep legacy reset for unrelated tests
-import { resetUsersStore } from '@/stores/useUsersStore'
+import { act } from 'react-dom/test-utils'
+import ToastProvider, { useToast, TOAST_TTL_MS, TOAST_MAX } from '../../components/ui/Toast'
+import { resetUsersStore } from '../useUsersStore'
+
 
 function TestApp() {
   const { show } = useToast()
@@ -19,17 +18,14 @@ function TestApp() {
   )
 }
 
-describe('Toast UI integration', () => {
+describe('ToastProvider - queue behavior', () => {
   beforeEach(() => {
-    // keep the legacy store reset for other tests that may still use it
     resetUsersStore()
     vi.useFakeTimers()
   })
-  afterEach(() => {
-    vi.useRealTimers()
-  })
+  afterEach(() => vi.useRealTimers())
 
-  it('renders stacked toasts and respects TOAST_MAX', () => {
+  it('enforces TOAST_MAX and shows the newest toasts', () => {
     render(
       <ToastProvider>
         <TestApp />
@@ -40,7 +36,6 @@ describe('Toast UI integration', () => {
     fireEvent.click(screen.getByText('Three'))
     fireEvent.click(screen.getByText('Four'))
 
-    // Only TOAST_MAX items should be visible
     const statuses = screen.getAllByRole('status')
     expect(statuses.length).toBe(TOAST_MAX)
   })
@@ -52,13 +47,11 @@ describe('Toast UI integration', () => {
       </ToastProvider>
     )
     fireEvent.click(screen.getByText('One'))
-    // provider renders a status region for each toast
     expect(screen.getAllByRole('status').length).toBe(1)
 
     act(() => {
       vi.advanceTimersByTime(TOAST_TTL_MS + 100)
     })
-    // after TTL it should be removed
     expect(screen.queryByRole('status')).toBeNull()
   })
 })

@@ -2,14 +2,14 @@
 import { useState, useEffect } from 'react'
 import { signIn } from 'next-auth/react'
 import OAuthButton from './OAuthButton'
-import Toast from './Toast'
+import { useToast } from './ui/Toast'
 
 export default function SignInFormClient() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
-  const [toast, setToast] = useState<{message: string; type?: 'info'|'success'|'error'} | null>(null)
+  const { show } = useToast()
   const [remember, setRemember] = useState(false)
 
   useEffect(() => {
@@ -29,10 +29,10 @@ export default function SignInFormClient() {
     setLoading(false)
 
     if (!res) return setError('No response from sign-in')
-    if (res.error) { setError(res.error); setToast({ message: res.error, type: 'error' }); return }
+  if (res.error) { setError(res.error); show(res.error, 'error'); return }
 
     // on success, redirect to home
-    setToast({ message: 'Signed in', type: 'success' })
+  show('Signed in', 'success')
     if (res.ok) window.location.href = '/'
   }
 
@@ -83,7 +83,7 @@ export default function SignInFormClient() {
         </button>
       </form>
 
-      {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
+  {/* toasts are rendered by the ToastProvider */}
     </div>
   )
 }

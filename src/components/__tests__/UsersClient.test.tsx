@@ -2,6 +2,7 @@ import React from 'react'
 import { describe, test, expect, beforeEach } from 'vitest'
 import { render, screen, fireEvent, within } from '@testing-library/react'
 import UsersClient from '@/components/UsersClient'
+import { ToastProvider } from '@/components/ui/Toast'
 import { users as initialUsers } from '@/data/users'
 import { resetUsersStore } from '@/stores/useUsersStore'
 
@@ -15,7 +16,11 @@ describe('UsersClient', () => {
     resetUsersStore()
   })
   test('renders initial users and filters by search query', () => {
-    render(<UsersClient />)
+    render(
+      <ToastProvider>
+        <UsersClient />
+      </ToastProvider>
+    )
 
     // Ensure at least one of the known mock users appears
     expect(screen.getByText(initialUsers[0].name)).toBeInTheDocument()
@@ -33,7 +38,11 @@ describe('UsersClient', () => {
   })
 
   test('filters by role and allows deleting a user', () => {
-    render(<UsersClient />)
+    render(
+      <ToastProvider>
+        <UsersClient />
+      </ToastProvider>
+    )
 
     // Choose a role that we know exists in the fixture
     const roleToFilter = initialUsers.find(u => u.role === 'admin')?.role || 'admin'
@@ -65,7 +74,11 @@ describe('UsersClient', () => {
   })
 
   test('creates a new user via the create user form (mock)', () => {
-    render(<UsersClient />)
+    render(
+      <ToastProvider>
+        <UsersClient />
+      </ToastProvider>
+    )
 
   // Open create user form
   const createButton = screen.getByRole('button', { name: /add new user/i })
@@ -94,7 +107,11 @@ describe('UsersClient', () => {
   })
 
   test('reset password triggers a toast message', () => {
-    render(<UsersClient />)
+    render(
+      <ToastProvider>
+        <UsersClient />
+      </ToastProvider>
+    )
 
     // Click the reset password button for the first visible user
     const resetButtons = screen.getAllByRole('button', { name: /reset password/i })
@@ -105,7 +122,11 @@ describe('UsersClient', () => {
   })
 
   test('changing a user role updates the displayed role', () => {
-    render(<UsersClient />)
+    render(
+      <ToastProvider>
+        <UsersClient />
+      </ToastProvider>
+    )
 
     // Find the first user's role block and the select to change role
     const userArticle = screen.getAllByRole('article')[0]

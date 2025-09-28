@@ -8,15 +8,18 @@ declare module 'next-auth' {
   interface Session extends DefaultSession {
     user: DefaultSession['user'] & {
       id: string
-      role?: string
+      role?: Role
     }
   }
 
   interface User {
     id: string
-    role?: string
+    role?: Role
   }
 }
+
+// Define application role set
+type Role = 'admin' | 'editor' | 'user'
 
 declare module 'next-auth/jwt' {
   interface JWT {
@@ -50,7 +53,7 @@ export const authOptions: NextAuthOptions = {
           email: user.email,
           emailVerified: user.emailVerified,
           image: user.image,
-          role: user.role,
+          role: user.role as Role | undefined,
         }
       },
     }),
@@ -62,8 +65,8 @@ export const authOptions: NextAuthOptions = {
 
     async jwt({ token, user }) {
       if (user) {
-        const dbUser = user as { id: string; role?: string }
-        token.role = dbUser.role
+        const dbUser = user as { id: string; role?: Role }
+        token.role = dbUser.role as Role | undefined
         token.id = dbUser.id
         token.sub = dbUser.id
       }
@@ -73,7 +76,7 @@ export const authOptions: NextAuthOptions = {
     async session({ session, token }) {
       if (token) {
         session.user.id = token.id as string
-        session.user.role = token.role as string
+        session.user.role = token.role as Role | undefined
       }
       return session
     },

@@ -17,6 +17,11 @@ export default function AdminOverviewPage() {
           <h2 className="font-semibold">Categories</h2>
           <p className="text-sm text-gray-600">Manage categories and subcategories used by products.</p>
         </Link>
+
+        <Link href="/admin/locales" className="block p-4 bg-white rounded shadow hover:shadow-md">
+          <h2 className="font-semibold">Locales</h2>
+          <p className="text-sm text-gray-600">Manage available locales, regional names and per-locale API keys.</p>
+        </Link>
       </div>
     </div>
   )

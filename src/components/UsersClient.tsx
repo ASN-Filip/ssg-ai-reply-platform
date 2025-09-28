@@ -2,7 +2,7 @@
 
 import React from 'react'
 import ConfirmDialog from './ui/ConfirmDialog'
-import Toast from './ui/Toast'
+import { useToast } from './ui/Toast'
 import UserFormDialog from './ui/UserFormDialog'
 import { useUsersStore, type User, type State } from '@/stores/useUsersStore'
 
@@ -17,6 +17,8 @@ export default function UsersClient() {
   
   const editingUser = useUsersStore((state: State) => state.editingUser)
   const openEdit = useUsersStore((state: State) => state.openEdit)
+
+  const { show } = useToast()
 
   const [query, setQuery] = React.useState('')
   const [roleFilter, setRoleFilter] = React.useState<string>('all')
@@ -42,13 +44,21 @@ export default function UsersClient() {
 
   function performDelete(userId: string) {
     deleteUser(userId)
+    show('User deleted', 'success')
+  }
+
+  function handleResetPassword(userId: string) {
+    resetPassword(userId)
+    show(`Password reset link sent for user ${userId}`, 'info')
   }
 
   function saveUser(vals: { id?: string; name: string; email: string; role: string }) {
     if (vals.id) {
       updateUser({ id: vals.id, name: vals.name, email: vals.email, role: vals.role })
+      show('User updated', 'success')
     } else {
       createUser({ name: vals.name, email: vals.email, role: vals.role })
+      show('User created', 'success')
     }
   openEdit(null)
   }
@@ -57,6 +67,7 @@ export default function UsersClient() {
     const u = (users as User[]).find((x: User) => x.id === userId)
     if (!u) return
     updateUser({ id: userId, name: u.name, email: u.email, role })
+    show('User updated', 'success')
   }
 
   // auto-clear toast after 3s
@@ -92,7 +103,7 @@ export default function UsersClient() {
               <div className="text-right">
                 <div className="text-sm mb-1">Role: {u.role}</div>
                 <div className="flex gap-2">
-                  <button onClick={() => resetPassword(u.id)} className="text-sm px-2 py-1 border rounded">Reset password</button>
+                  <button onClick={() => handleResetPassword(u.id)} className="text-sm px-2 py-1 border rounded">Reset password</button>
                   <select aria-label={`Change role for ${u.name}`} value={u.role} onChange={e => handleChangeRole(u.id, e.target.value)} className="text-sm border px-2 py-1 rounded">
                     <option value="user">User</option>
                     <option value="admin">Admin</option>
@@ -115,7 +126,7 @@ export default function UsersClient() {
         onCancel={() => openConfirm(null)}
         onConfirm={() => confirmUserId && performDelete(confirmUserId)}
       />
-  <Toast />
+  {/* ToastProvider renders toasts globally; no local renderer required */}
 
   <UserFormDialog open={!!editingUser} initial={editingUser ?? undefined} title={editingUser?.id ? 'Edit user' : 'Create user'} onCancel={() => openEdit(null)} onSave={saveUser} />
     </div>

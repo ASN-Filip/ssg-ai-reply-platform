@@ -1,6 +1,9 @@
 "use client";
 
 import React, { useEffect, useRef, useState } from "react";
+// (previously imported usePathname here; removed as it's unused)
+import type { Session } from 'next-auth'
+
 import Image from "next/image";
 import Link from "next/link";
 import { useSession, signOut } from 'next-auth/react'
@@ -98,18 +101,97 @@ export default function HeaderClient() {
       btn.setAttribute("aria-expanded", open ? "true" : "false");
     }, [open]);
 
-  const Profile: React.FC = () => {
-    const { data: session } = useSession()
+  const { status, data: session } = useSession()
+  const [adminOpen, setAdminOpen] = useState(false)
+  const adminButtonRef = useRef<HTMLButtonElement | null>(null)
+  const adminMenuRef = useRef<HTMLDivElement | null>(null)
+
+  const Profile: React.FC<{ session: Session | null }> = ({ session }) => {
+    const [dbUser, setDbUser] = useState<{ id: string; name?: string | null; email?: string | null; role?: string | null; image?: string | null } | null>(null)
+
+    useEffect(() => {
+      let mounted = true
+      fetch('/api/users/me')
+        .then(r => r.json())
+        .then(data => {
+          if (!mounted) return
+          if (data?.user) setDbUser(data.user)
+        })
+        .catch(() => {})
+      return () => { mounted = false }
+    }, [])
+
     if (!session) return <></>
-    const name = session.user?.name || session.user?.email || 'User'
-    const role = session.user?.role ?? ''
+    const name = dbUser?.name ?? session.user?.name ?? session.user?.email ?? 'User'
+    const role = dbUser?.role ?? session.user?.role ?? ''
+    const image = dbUser?.image ?? session.user?.image ?? undefined
+
     return (
       <div className="flex items-center space-x-3">
+        {image ? (
+          <Image src={image} alt={name} width={32} height={32} className="w-8 h-8 rounded-full object-cover" />
+        ) : (
+          <div className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center text-sm text-gray-600">{(name || 'U').charAt(0)}</div>
+        )}
         <div className="text-sm text-gray-700">{name}</div>
         {role && <div className="text-xs text-gray-500">{role}</div>}
         <button onClick={() => signOut({ callbackUrl: '/signin' })} className="text-sm text-blue-600">Sign out</button>
       </div>
     )
+  }
+
+  // close admin dropdown on outside click / Escape
+  useEffect(() => {
+    if (!adminOpen) return
+    function onDocClick(e: MouseEvent) {
+      const t = e.target as Node
+      if (!adminMenuRef.current || !adminButtonRef.current) return
+      if (!adminMenuRef.current.contains(t) && !adminButtonRef.current.contains(t)) {
+        setAdminOpen(false)
+      }
+    }
+    function onKey(e: KeyboardEvent) {
+      if (e.key === 'Escape') setAdminOpen(false)
+    }
+    document.addEventListener('click', onDocClick)
+    document.addEventListener('keydown', onKey)
+    return () => {
+      document.removeEventListener('click', onDocClick)
+      document.removeEventListener('keydown', onKey)
+    }
+  }, [adminOpen])
+
+  // no runtime header guard needed now — layout was fixed to avoid duplicates
+
+  // Read session at top-level so we can show role-based navigation
+  if (status !== 'authenticated') return null
+
+  
+
+  const isAdmin = !!session?.user?.role && session.user.role === 'admin'
+  
+  // shared nav item type and builder so desktop and mobile stay in sync
+  type NavItem = { path: string; label: string; admin?: boolean; icon?: React.ReactNode }
+
+  const getNavItems = () => {
+    const baseItems: NavItem[] = siteMap.length === 0 ? [
+      { path: '/', label: 'Home' },
+      { path: '/reviews', label: 'Reviews' },
+      { path: '/products', label: 'Products' },
+    ] : siteMap.map(i => ({ path: i.path, label: i.label }))
+
+    const adminItems: NavItem[] = [
+      { path: '/admin/users', label: 'Users', admin: true, icon: (
+        <svg className="w-4 h-4 mr-2 text-gray-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+      ) },
+      { path: '/admin/categories', label: 'Categories', admin: true, icon: (
+        <svg className="w-4 h-4 mr-2 text-gray-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 6h18"/><path d="M3 12h18"/><path d="M3 18h18"/></svg>
+      ) },
+      { path: '/admin/locales', label: 'Locales', admin: true, icon: (
+        <svg className="w-4 h-4 mr-2 text-gray-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a7.5 7.5 0 0 0 0-6"/></svg>
+      ) },
+    ]
+    return { baseItems, adminItems }
   }
 
   return (
@@ -118,37 +200,69 @@ export default function HeaderClient() {
         {/* Left: logo */}
         <div className="flex items-center space-x-4">
           <Link href="/" className="flex items-center" data-discover="true">
-            <Image src="/assets/images/logo-samsung.svg" alt="Samsung Logo" width={140} height={28} className="h-5 md:h-6" />
+            <Image src="/assets/images/logo-samsung.svg" alt="Samsung Logo" width={140} height={28} className="h-5 md:h-6 w-auto" />
           </Link>
         </div>
 
         {/* Center: desktop nav (dynamic) */}
         <div className="hidden md:flex md:items-center md:space-x-6">
-          {siteMap.length === 0 ? (
-            <>
-              <Link href="/" className="text-sm font-medium text-gray-700 hover:text-black">Home</Link>
-              <Link href="/reviews" className="text-sm font-medium text-gray-700 hover:text-black">Reviews</Link>
-              <Link href="/products" className="text-sm font-medium text-gray-700 hover:text-black">Products</Link>
-            </>
-          ) : (
-            siteMap.map(item => (
-              <Link key={item.path} href={item.path} className="text-sm font-medium text-gray-700 hover:text-black">{item.label}</Link>
-            ))
-          )}
+          {
+            // build unified navItems: either use siteMap (if available) or defaults
+          }
+          {
+            (() => {
+              const { baseItems, adminItems } = getNavItems()
+              const inline = baseItems
+              const adminOnly = isAdmin ? adminItems : []
+
+              return (
+                <>
+                  {inline.map(i => (
+                    <Link key={i.path} href={i.path} className="text-sm font-medium text-gray-700 hover:text-black">{i.label}</Link>
+                  ))}
+
+                  {adminOnly.length > 0 && (
+                    <div className="relative">
+                      <button
+                        ref={adminButtonRef}
+                        onClick={() => setAdminOpen(v => !v)}
+                        aria-haspopup="true"
+                        aria-controls="admin-menu"
+                        className="text-sm font-medium text-gray-700 hover:text-black flex items-center space-x-2"
+                      >
+                        <span>Admin</span>
+                        <svg width="12" height="12" viewBox="0 0 20 20" fill="currentColor"><path d="M5.25 7.5l4.5 4.5 4.5-4.5"/></svg>
+                      </button>
+
+                      {adminOpen && (
+                        <div id="admin-menu" ref={adminMenuRef} className="absolute right-0 mt-2 w-48 bg-white border rounded shadow-md py-2">
+                          {adminOnly.map(i => (
+                            <Link key={i.path} href={i.path} className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-50">
+                              {i.icon ?? (
+                                <svg className="w-4 h-4 mr-2 text-gray-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 7h18"/><path d="M6 7v13a1 1 0 0 0 1 1h10a1 1 0 0 0 1-1V7"/><path d="M9 3h6v4H9z"/></svg>
+                              )}
+                              {i.label}
+                            </Link>
+                          ))}
+                          <div className="border-t mt-1" />
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </>
+              )
+            })()
+          }
         </div>
 
         {/* Right: search & actions */}
         <div className="flex items-center space-x-4">
-          <div className="hidden md:block">
-            <label htmlFor="site-search" className="sr-only">Search</label>
-            <input id="site-search" className="border rounded-md px-3 py-1 text-sm" placeholder="Search" />
-          </div>
 
           <div className="hidden md:flex items-center space-x-3">
             <button aria-label="Notifications" className="text-gray-600 hover:text-black">
               <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M12 22c1.1 0 1.99-.9 1.99-2H10c0 1.1.9 2 2 2zm6-6V11c0-3.07-1.63-5.64-4.5-6.32V4a1.5 1.5 0 10-3 0v.68C7.63 5.36 6 7.92 6 11v5l-2 2v1h16v-1l-2-2z"/></svg>
             </button>
-            <Profile />
+            <Profile session={session ?? null} />
           </div>
 
           {/* Mobile menu toggle */}
@@ -172,19 +286,34 @@ export default function HeaderClient() {
       {/* Mobile menu panel */}
       <div className={`md:hidden bg-white border-t ${open ? 'block' : 'hidden'}`}>
         <ul id="mobile-menu" ref={menuRef} className="flex flex-col space-y-1 px-4 py-3">
-          {siteMap.length === 0 ? (
-            <>
-              <li><Link href="/" className="block px-2 py-2 text-gray-700">Home</Link></li>
-              <li><Link href="/reviews" className="block px-2 py-2 text-gray-700">Reviews</Link></li>
-              <li><Link href="/products" className="block px-2 py-2 text-gray-700">Products</Link></li>
-              <li><Link href="/admin/users" className="block px-2 py-2 text-gray-700">Users</Link></li>
-              <li><Link href="/admin/categories" className="block px-2 py-2 text-gray-700">Categories</Link></li>
-            </>
-          ) : (
-            siteMap.map(item => (
-              <li key={item.path}><Link href={item.path} className="block px-2 py-2 text-gray-700">{item.label}</Link></li>
-            ))
-          )}
+          {
+            // Build the same navItems used for desktop, but render as list items for mobile
+            (() => {
+              const { baseItems, adminItems } = getNavItems()
+
+              return (
+                <>
+                  {baseItems.map(i => (
+                    <li key={i.path}><Link href={i.path} className="block px-2 py-2 text-gray-700">{i.label}</Link></li>
+                  ))}
+
+                  {isAdmin && adminItems.length > 0 && (
+                    <>
+                      <li aria-hidden className="border-t my-2" />
+                      {adminItems.map(i => (
+                        <li key={i.path}>
+                          <Link href={i.path} className="flex items-center px-2 py-2 text-gray-700">
+                            {i.icon}
+                            <span>{i.label}</span>
+                          </Link>
+                        </li>
+                      ))}
+                    </>
+                  )}
+                </>
+              )
+            })()
+          }
         </ul>
       </div>
     </header>

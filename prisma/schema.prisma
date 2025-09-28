@@ -54,3 +54,23 @@ model VerificationToken {
 
   @@unique([identifier, token])
 }
+
+model Locale {
+  id           String   @id @map("_id") @default(auto()) @db.ObjectId
+  code         String
+  displayName  String
+  apiKey       String?
+  // Bazaar Voice related fields
+  bazaarVoiceApiKey String?
+  bvResponseApiKey   String?
+  bvClientId         String?
+  bvClientSecret     String?
+  bazaarVoiceClient  String?
+  regionalNames String[] @default([])
+  description  String?
+  createdBy    String?  @db.ObjectId
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@unique([code])
+}

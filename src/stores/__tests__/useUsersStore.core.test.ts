@@ -1,7 +1,7 @@
 import { act } from '@testing-library/react'
 import { describe, it, beforeEach, expect, vi } from 'vitest'
 
-import { useUsersStore, resetUsersStore, TOAST_TTL_MS } from '../useUsersStore'
+import { useUsersStore, resetUsersStore } from '../useUsersStore'
 
 describe('useUsersStore - core actions', () => {
   beforeEach(() => {
@@ -41,16 +41,8 @@ describe('useUsersStore - core actions', () => {
     const created = after.users.find((u) => u.email === 'new@example.com')
     expect(created).toBeDefined()
 
-    // toast should be queued
-    expect(after.toastQueue.length).toBeGreaterThan(0)
-
-    // advance timers to allow toast TTL to expire and be removed
-    act(() => {
-      vi.advanceTimersByTime(TOAST_TTL_MS + 10)
-    })
-
-    const later = useUsersStore.getState()
-    expect(later.toastQueue.length).toBe(0)
+    // previously the store also queued a toast; toast rendering is now the
+    // responsibility of callers via the toast provider.
   })
 
   it('updateUser modifies an existing user and shows a toast', () => {
@@ -67,15 +59,7 @@ describe('useUsersStore - core actions', () => {
     expect(updated).toBeDefined()
     expect(updated?.name).toBe(newName)
 
-    // toast should be queued
-    expect(after.toastQueue.length).toBeGreaterThan(0)
-
-    // ensure toast is auto-removed
-    act(() => {
-      vi.advanceTimersByTime(TOAST_TTL_MS + 5)
-    })
-
-    const later = useUsersStore.getState()
-    expect(later.toastQueue.length).toBe(0)
+    // previously the store queued a toast; rendering is now the responsibility
+    // of callers via the toast provider.
   })
 })
