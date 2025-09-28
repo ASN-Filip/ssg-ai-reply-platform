@@ -3,6 +3,7 @@
 import React, { useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
+import { useSession, signOut } from 'next-auth/react'
 
 export default function HeaderClient() {
   const [open, setOpen] = useState(false);
@@ -92,10 +93,24 @@ export default function HeaderClient() {
   }, [open]);
 
   useEffect(() => {
-    const btn = buttonRef.current;
-    if (!btn) return;
-    btn.setAttribute("aria-expanded", open ? "true" : "false");
-  }, [open]);
+      const btn = buttonRef.current;
+      if (!btn) return;
+      btn.setAttribute("aria-expanded", open ? "true" : "false");
+    }, [open]);
+
+  const Profile: React.FC = () => {
+    const { data: session } = useSession()
+    if (!session) return <></>
+    const name = session.user?.name || session.user?.email || 'User'
+    const role = (session.user && 'role' in session.user) ? (session.user as unknown as { role?: string }).role : ''
+    return (
+      <div className="flex items-center space-x-3">
+        <div className="text-sm text-gray-700">{name}</div>
+        {role && <div className="text-xs text-gray-500">{role}</div>}
+        <button onClick={() => signOut({ callbackUrl: '/signin' })} className="text-sm text-blue-600">Sign out</button>
+      </div>
+    )
+  }
 
   return (
     <header className="w-full bg-white shadow-sm border-b">
@@ -133,7 +148,7 @@ export default function HeaderClient() {
             <button aria-label="Notifications" className="text-gray-600 hover:text-black">
               <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M12 22c1.1 0 1.99-.9 1.99-2H10c0 1.1.9 2 2 2zm6-6V11c0-3.07-1.63-5.64-4.5-6.32V4a1.5 1.5 0 10-3 0v.68C7.63 5.36 6 7.92 6 11v5l-2 2v1h16v-1l-2-2z"/></svg>
             </button>
-            <button aria-label="Account" className="text-gray-600 hover:text-black">Account</button>
+            <Profile />
           </div>
 
           {/* Mobile menu toggle */}
