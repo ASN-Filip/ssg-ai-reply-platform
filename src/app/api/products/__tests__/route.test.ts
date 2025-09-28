@@ -54,7 +54,8 @@ describe('products API route', () => {
   })
 
   it('POST invalid product returns 400 and does not write', async () => {
-    const invalid = { sku: 'Z', name: 'Z', category: 'mobile' }
+    // missing 'sku' should be rejected
+    const invalid = { name: 'Z', category: 'mobile' }
     const req = new Request('http://localhost/api/products', { method: 'POST', body: JSON.stringify(invalid) })
     const res = await productsRoute.POST(req as Request)
     expect((res as Response).status).toBe(400)

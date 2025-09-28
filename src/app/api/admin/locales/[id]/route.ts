@@ -1,4 +1,4 @@
-import { NextResponse, NextRequest } from 'next/server'
+import { NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth/next'
 import type { Session } from 'next-auth'
 import { authOptions } from '@/lib/auth'
@@ -19,24 +19,35 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
   if (!body) return NextResponse.json({ error: 'Invalid body' }, { status: 400 })
 
   try {
-  const updated = await prisma.locale.update({ where: { id }, data: {
-      ...(body.code !== undefined ? { code: String(body.code).trim() } : {}),
-      ...(body.displayName !== undefined ? { displayName: String(body.displayName).trim() } : {}),
-      ...(body.apiKey !== undefined ? { apiKey: body.apiKey ?? null } : {}),
-      ...(body.regionalNames !== undefined ? { regionalNames: (body.regionalNames as Array<unknown>).map(x => String(x).trim()).filter(Boolean).slice(0,5) } : {}),
-      ...(body.description !== undefined ? { description: body.description ? String(body.description).trim() : null } : {}),
-      ...(body.bazaarVoiceApiKey !== undefined ? { bazaarVoiceApiKey: encrypt(body.bazaarVoiceApiKey ?? null) } : {}),
-      ...(body.bvResponseApiKey !== undefined ? { bvResponseApiKey: encrypt(body.bvResponseApiKey ?? null) } : {}),
-      ...(body.bvClientId !== undefined ? { bvClientId: body.bvClientId ?? null } : {}),
-      ...(body.bvClientSecret !== undefined ? { bvClientSecret: encrypt(body.bvClientSecret ?? null) } : {}),
-      ...(body.bazaarVoiceClient !== undefined ? { bazaarVoiceClient: body.bazaarVoiceClient ?? null } : {}),
-    } })
+    const updated = await prisma.locale.update({
+      where: { id },
+      data: {
+        ...(body.code !== undefined ? { code: String(body.code).trim() } : {}),
+        ...(body.displayName !== undefined ? { displayName: String(body.displayName).trim() } : {}),
+        ...(body.apiKey !== undefined ? { apiKey: body.apiKey ?? null } : {}),
+        ...(body.regionalNames !== undefined
+          ? {
+              regionalNames: (body.regionalNames as Array<unknown>)
+                .map((value) => String(value).trim())
+                .filter(Boolean)
+                .slice(0, 5),
+            }
+          : {}),
+        ...(body.description !== undefined ? { description: body.description ? String(body.description).trim() : null } : {}),
+        ...(body.bazaarVoiceApiKey !== undefined ? { bazaarVoiceApiKey: encrypt(body.bazaarVoiceApiKey ?? null) } : {}),
+        ...(body.bvResponseApiKey !== undefined ? { bvResponseApiKey: encrypt(body.bvResponseApiKey ?? null) } : {}),
+        ...(body.bvClientId !== undefined ? { bvClientId: body.bvClientId ?? null } : {}),
+        ...(body.bvClientSecret !== undefined ? { bvClientSecret: encrypt(body.bvClientSecret ?? null) } : {}),
+        ...(body.bazaarVoiceClient !== undefined ? { bazaarVoiceClient: body.bazaarVoiceClient ?? null } : {}),
+      },
+    })
     if (!updated) return NextResponse.json({ error: 'Not found' }, { status: 404 })
-  // remove sensitive secrets from the returned object
-  const u = updated as unknown as Record<string, unknown>
-  const omit = (obj: Record<string, unknown>, keys: string[]) => Object.fromEntries(Object.entries(obj).filter(([k]) => !keys.includes(k)))
-  const safe = omit(u, ['apiKey', 'bazaarVoiceApiKey', 'bvClientSecret', 'bvResponseApiKey'])
-  return NextResponse.json({ locale: safe })
+    // remove sensitive secrets from the returned object
+    const updatedRecord = updated as unknown as Record<string, unknown>
+    const omit = (obj: Record<string, unknown>, keys: string[]) =>
+      Object.fromEntries(Object.entries(obj).filter(([key]) => !keys.includes(key)))
+    const safe = omit(updatedRecord, ['apiKey', 'bazaarVoiceApiKey', 'bvClientSecret', 'bvResponseApiKey'])
+    return NextResponse.json({ locale: safe })
   } catch {
     const msg = 'Update failed'
     return NextResponse.json({ error: msg }, { status: 400 })
@@ -51,9 +62,9 @@ export async function DELETE(req: Request, { params }: { params: Promise<{ id: s
   const { id } = resolvedParams
 
   try {
-  await prisma.locale.delete({ where: { id } })
+    await prisma.locale.delete({ where: { id } })
     return NextResponse.json({ ok: true })
-  } catch (e) {
+  } catch {
     return NextResponse.json({ error: 'Not found' }, { status: 404 })
   }
 }

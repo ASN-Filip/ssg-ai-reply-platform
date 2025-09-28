@@ -5,15 +5,29 @@ import userEvent from '@testing-library/user-event'
 import ProductsClient from '../ProductsClient'
 import { products as staticProducts } from '@/data/products'
 import { vi } from 'vitest'
+import { renderWithClient } from '@/test/test-utils'
 
 describe('ProductsClient', () => {
   test('shows products for default category and filters when category/subcategory clicked', async () => {
   const user = userEvent.setup()
-  // mock fetch to return our static products
-  vi.stubGlobal('fetch', () => Promise.resolve(({
-    json: () => Promise.resolve(staticProducts)
-  } as unknown) as Response))
-  render(<ProductsClient />)
+  // mock fetch to return categories for /api/categories and products for /api/products
+  let call = 0
+  vi.stubGlobal('fetch', (input: RequestInfo) => {
+    call += 1
+    if (String(input).includes('/api/categories')) {
+      return Promise.resolve(({
+        ok: true,
+        text: () => Promise.resolve(JSON.stringify([{ id: 'computers', name: 'Computers', label: 'Computers', subcategories: [{ id: 'laptops', name: 'Laptops', label: 'Laptops' }] }]))
+      } as unknown) as Response)
+    }
+    // products endpoint
+    return Promise.resolve(({
+      ok: true,
+      text: () => Promise.resolve(JSON.stringify(staticProducts))
+    } as unknown) as Response)
+  })
+
+  renderWithClient(<ProductsClient />)
 
     // Default category should show the laptop product
     expect(await screen.findByText(/Notebook Ultra 14/i)).toBeInTheDocument()

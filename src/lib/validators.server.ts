@@ -9,7 +9,8 @@ export function validateProduct(obj: unknown) {
   if (!p.sku || typeof p.sku !== 'string') errors.push('sku is required and must be a string')
   if (!p.name || typeof p.name !== 'string') errors.push('name is required and must be a string')
   if (!p.category || typeof p.category !== 'string') errors.push('category is required and must be a string')
-  if (p.price === undefined || typeof p.price !== 'number' || Number.isNaN(p.price)) errors.push('price is required and must be a number')
+  // price is optional in this app; if present it must be a number
+  if (p.price !== undefined && (typeof p.price !== 'number' || Number.isNaN(p.price))) errors.push('price must be a number when provided')
   return { ok: errors.length === 0, errors }
 }
 

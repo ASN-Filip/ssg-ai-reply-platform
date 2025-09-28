@@ -1,5 +1,6 @@
 import React from 'react'
 import CategoriesClient from '@/components/CategoriesClient'
+import AdminCategoriesHeader from '@/components/admin/AdminCategoriesHeader'
 
 export default function AdminCategoriesPage() {
   return (
@@ -8,6 +9,7 @@ export default function AdminCategoriesPage() {
         <main className="flex-grow container mx-auto px-4 py-8">
           <div className="flex justify-between items-center mb-4">
             <h1 className="text-3xl font-bold">Category Management</h1>
+            <AdminCategoriesHeader />
           </div>
 
           <CategoriesClient />

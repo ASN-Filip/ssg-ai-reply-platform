@@ -74,3 +74,25 @@ model Locale {
 
   @@unique([code])
 }
+
+model Category {
+  id              String     @id @map("_id") @default(auto()) @db.ObjectId
+  categoryId      String?
+  name            String
+  categoryType    String?
+  label           String
+  description     String?
+  aiTrainingData  String?
+  productIds      String[]   @default([])
+  parentId        String?    @db.ObjectId
+  parent          Category?  @relation("CategoryChildren", fields: [parentId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  children        Category[] @relation("CategoryChildren")
+  createdAt       DateTime   @default(now())
+  updatedAt       DateTime   @updatedAt
+
+  @@unique([name])
+  @@index([categoryType, parentId])
+  @@index([parentId])
+  @@index([categoryType, createdAt])
+  @@index([parentId, createdAt])
+}

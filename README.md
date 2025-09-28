@@ -1,50 +1,71 @@
 This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
 
-## Getting Started
+# ssg-ai-reply-platform
 
-First, run the development server:
+Samsung Service Group’s AI reply platform built with Next.js 15 (App Router), Prisma (MongoDB), NextAuth, and React Query.
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+## Prerequisites
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+- Node.js 18+
+- A MongoDB instance (local or Atlas) and a `DATABASE_URL` in `.env.local`
+- npm (bundled with Node.js)
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+> The repository includes a working `.env.local` for development. Update the credentials before pushing to any shared environment.
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Quick start
 
-## Learn More
+1. Install dependencies:
 
-To learn more about Next.js, take a look at the following resources:
+	```bash
+	npm install
+	```
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+2. Push the Prisma schema to your Mongo database:
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+	```bash
+	npx prisma db push
+	```
 
-## Deploy on Vercel
+3. Seed the database (creates an admin user + sample categories):
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+	```bash
+	npm run seed
+	```
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+	- Admin credentials: `filip@adsomenoise.com` / `C4lvad0s!`
+	- The seed loads a hierarchical set of categories so the admin UI and product flows have data immediately.
 
-## Migration: Toasts
+4. Start the dev server:
 
-This project migrated from a store-based toast queue to a provider + hook.
+	```bash
+	npm run dev
+	```
 
-- Old system removed:
-	- `toastQueue` / `showToast` helpers in `src/stores/useUsersStore.ts`
-	- legacy renderer `src/components/ui/ToastLegacy.tsx`
+	Visit [http://localhost:3000](http://localhost:3000) and sign in with the seeded admin user.
 
-- New system:
-	- `ToastProvider` renders toasts globally: `src/components/ui/Toast.tsx`
-	- Use `useToast()` to show toasts from components: `import { useToast } from '@/hooks/useToast'`
+## Working with categories
 
-Tests and components were updated to call the provider hook directly. See `src/components/ui/Toast.tsx` for the TTL and queue constants if you depend on them in tests.
+- Admins manage categories at `/admin/categories`. The UI now reads directly from Prisma via React Query.
+- Seed data creates three top-level categories (Televisions, Audio, Home Appliances) with subcategories. Feel free to run `npm run seed` again after edits—`upsert` logic keeps names unique and updates existing records.
+- Public product views (`/products`) consume the same API and will show empty states until at least one category exists.
+
+## Useful scripts
+
+- `npm run dev` – Next.js in development mode (Turbopack)
+- `npm run build` – production build
+- `npm run lint` – ESLint across the repo
+- `npm run test` – Vitest unit tests
+- `npm run seed` – Prisma seeding (admin account + categories)
+
+## Authentication notes
+
+- NextAuth is configured with credentials + JWT sessions.
+- See `README_AUTH.md` for details on switching strategies or testing sessions.
+
+## Toast system
+
+Toasts moved from a Zustand queue to a provider-based approach.
+
+- `ToastProvider` lives in `src/components/ui/Toast.tsx` and is mounted via `ClientProviders`.
+- Use the `useToast()` hook from `@/hooks/useToast` to display notifications.
+- Legacy store-based helpers were removed.

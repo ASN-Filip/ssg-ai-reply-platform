@@ -2,24 +2,39 @@ import React from 'react'
 import { describe, test, expect, vi, beforeEach } from 'vitest'
 
 // Mock next-auth to avoid provider network fetches during unit tests.
-vi.mock('next-auth/react', () => {
-  const React = require('react')
-  return {
-    useSession: () => ({ data: { user: { name: 'Test User', email: 'test@example.com', role: 'admin' } }, status: 'authenticated' }),
-    signIn: () => Promise.resolve(null),
-    signOut: () => Promise.resolve(null),
-    SessionProvider: ({ children }: { children: React.ReactNode }) => React.createElement(React.Fragment, null, children),
-  }
-})
+vi.mock('next-auth/react', () => ({
+  useSession: () => ({ data: { user: { name: 'Test User', email: 'test@example.com', role: 'admin' } }, status: 'authenticated' }),
+  signIn: () => Promise.resolve(null),
+  signOut: () => Promise.resolve(null),
+  SessionProvider: ({ children }: { children: React.ReactNode }) => <>{children}</>,
+}))
 
 // stub fetch so HeaderClient's site-map and profile requests succeed
 beforeEach(() => {
-  globalThis.fetch = vi.fn((input) => {
-    const url = String(input)
-    if (url.includes('/api/site-map')) return Promise.resolve({ ok: true, json: () => Promise.resolve([]) })
-    if (url.includes('/api/users/me')) return Promise.resolve({ ok: true, json: () => Promise.resolve({ user: { id: 'u1', name: 'Test User', role: 'admin' } }) })
-    return Promise.resolve({ ok: true, json: () => Promise.resolve({}) })
-  }) as any
+  const fetchMock = vi.fn(async (input: Parameters<typeof fetch>[0]) => {
+    const url = input instanceof Request ? input.url : typeof input === 'string' ? input : input.toString()
+
+    if (url.includes('/api/site-map')) {
+      return new Response(JSON.stringify([]), {
+        status: 200,
+        headers: { 'Content-Type': 'application/json' },
+      })
+    }
+
+    if (url.includes('/api/users/me')) {
+      return new Response(
+        JSON.stringify({ user: { id: 'u1', name: 'Test User', role: 'admin' } }),
+        { status: 200, headers: { 'Content-Type': 'application/json' } }
+      )
+    }
+
+    return new Response(JSON.stringify({}), {
+      status: 200,
+      headers: { 'Content-Type': 'application/json' },
+    })
+  })
+
+  globalThis.fetch = fetchMock as unknown as typeof fetch
 })
 import { render, screen, fireEvent } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'

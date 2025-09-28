@@ -1,16 +1,54 @@
 import { NextResponse } from 'next/server'
-import { readCategories, writeCategories } from '@/lib/categoriesStore.server'
+import { prisma } from '@/lib/prisma'
 
-export async function GET() {
-  const categories = await readCategories()
-  return NextResponse.json(categories)
+type PublicCategory = {
+  id: string
+  name: string
+  label: string
+  categoryType?: string | null
+  subcategories: Array<{
+    id: string
+    name: string
+    label: string
+    categoryType?: string | null
+  }>
 }
 
-export async function POST(request: Request) {
-  const body = await request.json()
-  if (!Array.isArray(body)) {
-    return NextResponse.json({ error: 'expected array of categories' }, { status: 400 })
+export async function GET() {
+  const categories = await prisma.category.findMany({
+    where: { parentId: null },
+    orderBy: [{ createdAt: 'desc' }],
+    include: {
+      children: {
+        orderBy: [{ createdAt: 'desc' }],
+      }
+    }
+  })
+
+  type CategoryWithChildren = (typeof categories)[number]
+  type ChildCategory = CategoryWithChildren['children'][number]
+  function computeLabel(obj: unknown) {
+    // support new `label` or old localized fields
+    if (!obj || typeof obj !== 'object') return ''
+    const o = obj as Record<string, unknown>
+    return String(o.label ?? o.labelNlBe ?? o.labelFrBe ?? o.labelNlNl ?? '')
   }
-  await writeCategories(body)
-  return NextResponse.json({ ok: true })
+
+  const payload: PublicCategory[] = categories.map((category: CategoryWithChildren) => ({
+    id: category.id,
+    name: category.name,
+    label: computeLabel(category),
+    categoryType: category.categoryType,
+    subcategories: (category.children ?? []).map((child: ChildCategory) => ({
+      id: child.id,
+      name: child.name,
+      label: computeLabel(child),
+      categoryType: child.categoryType,
+    }))
+  }))
+  return NextResponse.json(payload)
+}
+
+export async function POST() {
+  return NextResponse.json({ error: 'Method not allowed' }, { status: 405 })
 }

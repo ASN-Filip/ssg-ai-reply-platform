@@ -2,13 +2,14 @@
 
 import React from 'react'
 import { useRouter } from 'next/navigation'
-import { useCategoriesStore } from '@/stores/useCategoriesStore'
+import { useCategories } from '@/hooks/useCategories'
 
 type Product = { id: string; sku?: string; name?: string; category?: string; subcategory?: string; price?: number; description?: string; [k: string]: unknown }
 
 export default function EditProductClient({ id }: { id: string }) {
   const router = useRouter()
-  const categories = useCategoriesStore(state => state.categories)
+  const { data: categoriesData, isLoading: categoriesLoading, isError: categoriesError } = useCategories()
+  const categories = React.useMemo(() => categoriesData ?? [], [categoriesData])
 
   const [product, setProduct] = React.useState<Product | null>(null)
   const [loading, setLoading] = React.useState(true)
@@ -29,6 +30,33 @@ export default function EditProductClient({ id }: { id: string }) {
     return () => { mounted = false }
   }, [id])
 
+  React.useEffect(() => {
+    if (categories.length === 0) return
+    setProduct((prev) => {
+      if (!prev) return prev
+
+      let nextCategory = typeof prev.category === 'string' ? prev.category : null
+      let nextSubcategory = typeof prev.subcategory === 'string' ? prev.subcategory : null
+
+      if (!nextCategory || !categories.some((category) => category.id === nextCategory)) {
+        const fallback = categories[0]
+        nextCategory = fallback?.id ?? null
+        nextSubcategory = fallback?.subcategories[0]?.id ?? null
+      } else {
+        const category = categories.find((item) => item.id === nextCategory)
+        if (category) {
+          if (!nextSubcategory || !category.subcategories.some((sub) => sub.id === nextSubcategory)) {
+            nextSubcategory = category.subcategories[0]?.id ?? null
+          }
+        }
+      }
+
+      if (nextCategory === prev.category && nextSubcategory === prev.subcategory) return prev
+
+      return { ...prev, category: nextCategory ?? undefined, subcategory: nextSubcategory ?? undefined }
+    })
+  }, [categories])
+
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault()
     if (!product) return
@@ -40,8 +68,12 @@ export default function EditProductClient({ id }: { id: string }) {
     }
   }
 
-  if (loading) return <div>Loading…</div>
+  if (loading || categoriesLoading) return <div>Loading…</div>
+  if (categoriesError) return <div className="text-sm text-red-600">Unable to load categories.</div>
   if (!product) return <div>Product not found</div>
+  if (categories.length === 0) {
+    return <div className="text-sm text-gray-600">Create categories before editing products.</div>
+  }
 
   return (
     <form onSubmit={onSubmit} className="space-y-4 max-w-xl">

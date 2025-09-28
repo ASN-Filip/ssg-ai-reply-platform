@@ -1,8 +1,8 @@
 "use client";
 
 import React from 'react';
-import { useCategoriesStore } from '@/stores/useCategoriesStore';
 import Link from 'next/link';
+import { useCategories } from '@/hooks/useCategories';
 
 type Product = {
   id: string
@@ -15,11 +15,12 @@ type Product = {
 }
 
 export default function ProductsClient() {
-  const categories = useCategoriesStore(state => state.categories);
+  const { data: categoriesData, isLoading: categoriesLoading, isError: categoriesError } = useCategories()
+  const categories = React.useMemo(() => categoriesData ?? [], [categoriesData])
 
   const [products, setProducts] = React.useState<Product[]>([])
-  const [activeCategory, setActiveCategory] = React.useState<string | null>(categories[0]?.id ?? null);
-  const [activeSubcategory, setActiveSubcategory] = React.useState<string | null>(categories[0]?.subcategories[0]?.id ?? null);
+  const [activeCategory, setActiveCategory] = React.useState<string | null>(null)
+  const [activeSubcategory, setActiveSubcategory] = React.useState<string | null>(null)
 
   React.useEffect(() => {
     let mounted = true
@@ -30,18 +31,60 @@ export default function ProductsClient() {
     return () => { mounted = false }
   }, [])
 
+  React.useEffect(() => {
+    if (categories.length === 0) {
+      setActiveCategory(null)
+      setActiveSubcategory(null)
+      return
+    }
+
+    setActiveCategory((prevCategory) => {
+      if (!prevCategory || !categories.some((category) => category.id === prevCategory)) {
+        const next = categories[0]
+        return next?.id ?? null
+      }
+      return prevCategory
+    })
+  }, [categories])
+
+  React.useEffect(() => {
+    if (!activeCategory) {
+      setActiveSubcategory(null)
+      return
+    }
+    const currentCategory = categories.find((category) => category.id === activeCategory)
+    if (!currentCategory) {
+      setActiveSubcategory(null)
+      return
+    }
+    setActiveSubcategory((prevSubcategory) => {
+      if (!prevSubcategory || !currentCategory.subcategories.some((subcategory) => subcategory.id === prevSubcategory)) {
+        return currentCategory.subcategories[0]?.id ?? null
+      }
+      return prevSubcategory
+    })
+  }, [categories, activeCategory])
+
   const visibleProducts = React.useMemo(() => {
     if (!activeCategory) return products;
     return products.filter(p => p.category === activeCategory && (!activeSubcategory || p.subcategory === activeSubcategory));
   }, [activeCategory, activeSubcategory, products]);
 
-  // If categories change (admin added new), ensure we have a sensible default
-  React.useEffect(() => {
-    if (!activeCategory && categories.length > 0) {
-      setActiveCategory(categories[0].id);
-      setActiveSubcategory(categories[0].subcategories[0]?.id ?? null);
-    }
-  }, [categories, activeCategory]);
+  if (categoriesLoading) {
+    return <div className="text-sm text-gray-500">Loading categories…</div>
+  }
+
+  if (categoriesError) {
+    return <div className="text-sm text-red-600">Unable to load categories.</div>
+  }
+
+  if (categories.length === 0) {
+    return (
+      <div className="rounded border border-dashed p-6 text-sm text-gray-600">
+        No categories available. Create categories in the admin area to see products grouped here.
+      </div>
+    )
+  }
 
   return (
     <div>
