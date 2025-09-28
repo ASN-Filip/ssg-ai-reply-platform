@@ -1,0 +1,38 @@
+export const products = [
+  {
+    id: 'SM-S938BAKDEUB',
+    sku: 'SM-S938',
+    name: 'Galaxy S93',
+    category: 'mobile',
+    subcategory: 'smartphones',
+    price: 999,
+    description: 'The latest Galaxy flagship with stunning display and pro camera.',
+  },
+  {
+    id: 'LTP-ULTRA-14',
+    sku: 'LTP-ULTRA-14',
+    name: 'Notebook Ultra 14',
+    category: 'computers',
+    subcategory: 'laptops',
+    price: 1299,
+    description: 'Lightweight laptop built for creators and professionals.',
+  },
+  {
+    id: 'TV-OLED-55',
+    sku: 'TV-OLED-55',
+    name: 'Neo QLED OLED 55"',
+    category: 'tvs',
+    subcategory: 'oled',
+    price: 1799,
+    description: 'Vivid colors and deep blacks for cinematic experiences.',
+  },
+  {
+    id: 'WM-9000',
+    sku: 'WM-9000',
+    name: 'Washer Pro 9kg',
+    category: 'home-appliances',
+    subcategory: 'laundry',
+    price: 799,
+    description: 'Energy-efficient washer with smart home connectivity.',
+  },
+];
