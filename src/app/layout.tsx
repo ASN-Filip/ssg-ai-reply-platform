@@ -4,6 +4,7 @@ import "./globals.css";
 import Header from "../components/Header";
 import Footer from "../components/Footer";
 import ClientAuthGate from '@/components/ClientAuthGate'
+import ClientProviders from '@/components/ClientProviders'
 import { isAuthenticated } from '@/lib/guards.server'
 import { headers } from 'next/headers'
 import { redirect } from 'next/navigation'
@@ -46,11 +47,13 @@ export default async function RootLayout({
           {/* Client-side gate: renders children for allowed public routes (e.g. /signin),
              otherwise shows a loading skeleton while checking session and redirects */}
           <Header />
-          <ClientAuthGate>
-            {/* Place a no-op script to stabilize hydration */}
-            <script dangerouslySetInnerHTML={{ __html: "// noop" }} />
-            <main className="min-h-[60vh]">{children}</main>
-          </ClientAuthGate>
+          <ClientProviders>
+            <ClientAuthGate>
+              {/* Place a no-op script to stabilize hydration */}
+              <script dangerouslySetInnerHTML={{ __html: "// noop" }} />
+              <main className="min-h-[60vh]">{children}</main>
+            </ClientAuthGate>
+          </ClientProviders>
           <Footer />
         </body>
       </html>
